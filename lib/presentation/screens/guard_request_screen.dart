@@ -16,6 +16,20 @@ class _GuardRequestScreenState extends State<GuardRequestScreen> {
 
   final RideService rideService = RideService();
 
+  /// FORMAT TIME FROM TIMESTAMP
+  Map<String, String> formatScheduled(dynamic timestamp) {
+    if (timestamp == null) {
+      return {"date": "Not set", "time": "Not set"};
+    }
+
+    final dt = (timestamp as Timestamp).toDate();
+
+    return {
+      "date": "${dt.day}/${dt.month}/${dt.year}",
+      "time": "${dt.hour}:${dt.minute.toString().padLeft(2, '0')}",
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final guardId = FirebaseAuth.instance.currentUser!.uid;
@@ -59,6 +73,7 @@ class _GuardRequestScreenState extends State<GuardRequestScreen> {
                   itemBuilder: (context, index) {
                     final doc = requests[index];
                     final data = doc.data() as Map<String, dynamic>;
+                    final formatted = formatScheduled(data["scheduledTime"]);
 
                     return Card(
                       margin: const EdgeInsets.all(10),
@@ -68,10 +83,8 @@ class _GuardRequestScreenState extends State<GuardRequestScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Text("Pending Request"),
-                            Text(
-                              "Date: ${data["bookingDate"]?.toString().split("T")[0] ?? "Not set"}",
-                            ),
-                            Text("Time: ${data["bookingTime"] ?? "Not set"}"),
+                            Text("Date: ${formatted["date"]}"),
+                            Text("Time: ${formatted["time"]}"),
                           ],
                         ),
                         trailing: Row(
@@ -121,6 +134,7 @@ class _GuardRequestScreenState extends State<GuardRequestScreen> {
                   itemBuilder: (context, index) {
                     final doc = rides[index];
                     final data = doc.data() as Map<String, dynamic>;
+                    final formatted = formatScheduled(data["scheduledTime"]);
 
                     return Card(
                       color: Colors.orange.shade50,
@@ -131,11 +145,16 @@ class _GuardRequestScreenState extends State<GuardRequestScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text("Customer: ${data["customerId"]}"),
-                            Text(
-                              "Date: ${data["bookingDate"]?.toString().split("T")[0] ?? "Not set"}",
-                            ),
-                            Text("Time: ${data["bookingTime"] ?? "Not set"}"),
+                            Text("Date: ${formatted["date"]}"),
+                            Text("Time: ${formatted["time"]}"),
                           ],
+                        ),
+
+                        /// ⭐ THIS FIXES YOUR PROBLEM
+                        trailing: ElevatedButton(
+                          onPressed: () =>
+                              rideService.acceptRide(doc.id, guardId),
+                          child: const Text("ACCEPT"),
                         ),
                       ),
                     );
